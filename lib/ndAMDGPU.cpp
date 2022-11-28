@@ -24,7 +24,7 @@
 #include <radeon_drm.h>
 #include <libdrm/amdgpu_drm.h>
 #include <libdrm/amdgpu.h>
-
+#include <sys/ioctl.h>
 
 #pragma weak amdgpu_device_initialize
 #pragma weak amdgpu_query_info
@@ -63,6 +63,35 @@ namespace ndgpuinfo
 
                 return vram_gtt.vram_size;
             }
+
+			float getTemperature( int fd )
+			{
+				uint64_t v{};
+				struct drm_amdgpu_info q {};
+				q.query = AMDGPU_INFO_SENSOR_GPU_TEMP;
+				q.return_pointer = reinterpret_cast<uint64_t>(&v);
+				q.return_size = sizeof(v);
+
+				auto res = ioctl(fd, DRM_IOCTL_AMDGPU_INFO, &q);
+				
+				if( res != 0 )
+					return 0.f;
+
+				return v/1000.f;
+			}
+
+			uint64_t getLoad( int fd )
+			{
+				uint64_t v{};
+				struct drm_amdgpu_info q {};
+				q.query = AMDGPU_INFO_SENSOR_GPU_LOAD;
+				q.return_pointer = reinterpret_cast<uint64_t>(&v);
+				q.return_size = sizeof(v);
+				if( !ioctl(fd, DRM_IOCTL_AMDGPU_INFO, &q) )
+					return 0;
+
+				return v;
+			}
         }
 
         namespace radeon
@@ -95,6 +124,27 @@ namespace ndgpuinfo
 
                 return gem.vram_size;
             }
+			
+			float getTemperature( int fd )
+			{
+				uint64_t v{};
+				struct drm_radeon_info q {};
+				q.request = RADEON_INFO_CURRENT_GPU_TEMP;
+				q.value = reinterpret_cast<uint64_t>(&v);
+
+				auto res = ioctl(fd, DRM_IOCTL_RADEON_INFO, &q);
+				
+				if( res != 0 )
+					return 0.f;
+
+				return v/1000.f;
+			}
+
+			uint64_t getLoad( int /*fd*/ )
+			{
+				return 0;
+			}
+			
         }
 
         DRMDevice open_drm_path(const char *path)
@@ -104,28 +154,15 @@ namespace ndgpuinfo
 
             if (fd < 0)
                 return dev;
-            drmVersionPtr ver = drmGetVersion(fd);
 
-            if (!ver) {
+			drmVersionPtr ver = drmGetVersion(fd);
+
+            if (!ver)
+			{
                 close(fd);
                 return dev;
             }
 
-            // We don't seem to need this?
-            /*
-            drm_magic_t magic{};
-
-            if (drmGetMagic(fd, &magic) >= 0)
-            {
-                if (drmAuthMagic(fd, magic) == 0)
-                {
-                    if (drmDropMaster(fd))
-                    {
-                        LL_WARNS() << "drmDropMaster failed" << LL_ENDL;
-                    }
-                }
-            }
-            */
 
             if (strcmp(ver->name, "radeon") == 0)
                 dev = DRMDevice{fd, EType::radeon};
@@ -217,6 +254,31 @@ namespace ndgpuinfo
             }
             return 0;
         }
-
+		
+		float gpu::getTemperature(  )
+		{
+			switch (mDevice.type) {
+                case (EType::radeon):
+                    return radeon::getTemperature(mDevice.fd);
+                case (EType::amdgpu):
+                    return amdgpu::getTemperature(mDevice.fd);
+                case EType::undef:
+                    break;
+            }
+			return 0.f;
+		}
+		
+		uint64_t gpu::getLoad(  )
+		{
+			switch (mDevice.type) {
+                case (EType::radeon):
+                    return radeon::getLoad(mDevice.fd);
+                case (EType::amdgpu):
+                    return amdgpu::getLoad(mDevice.fd);
+                case EType::undef:
+                    break;
+            }
+			return 0;
+		}
     }
 }

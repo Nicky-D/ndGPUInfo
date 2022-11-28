@@ -45,8 +45,10 @@ namespace ndgpuinfo
             bool findGPU();
             void shutdown();
 
-            uint64_t  getTotalMemory();
-            uint64_t  getUsedMemory();
+            uint64_t getTotalMemory();
+            uint64_t getUsedMemory();
+            float getTemperature();
+            uint64_t getLoad();
         };
     }
 };

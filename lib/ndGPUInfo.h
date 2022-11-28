@@ -20,6 +20,8 @@ namespace ndgpuinfo
     gpu_info* init();
     void shutdown( gpu_info* );
 
-    uint64_t  getTotalMemory( gpu_info* );
-    uint64_t  getUsedMemory( gpu_info* );
+    uint64_t getTotalMemory( gpu_info* );
+    uint64_t getUsedMemory( gpu_info* );
+	float getTemperature( gpu_info* );
+	uint64_t getGPULoad( gpu_info* );
 }

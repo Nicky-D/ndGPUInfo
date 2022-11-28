@@ -57,7 +57,7 @@ namespace ndgpuinfo
         delete aInfo;
     }
 
-    uint64_t  getTotalMemory( gpu_info *aInfo )
+    uint64_t getTotalMemory( gpu_info *aInfo )
     {
         if( !aInfo )
             return 0;
@@ -69,7 +69,7 @@ namespace ndgpuinfo
         return 0;
     }
 
-    uint64_t  getUsedMemory( gpu_info *aInfo )
+    uint64_t getUsedMemory( gpu_info *aInfo )
     {
         if( !aInfo )
             return 0;
@@ -80,4 +80,24 @@ namespace ndgpuinfo
             return aInfo->mNV.getUsedMemory();
         return 0;
     }
+
+	float getTemperature( gpu_info *aInfo )
+	{
+		if( !aInfo )
+			return 0.f;
+		
+        if( aInfo->mAMD.isValid() )
+            return aInfo->mAMD.getTemperature();
+
+        return 0.f;
+	}
+	
+	uint64_t getGPULoad( gpu_info *aInfo )
+	{
+        if( aInfo->mAMD.isValid() )
+            return aInfo->mAMD.getLoad();
+
+		return 0;
+	}
+
 }
