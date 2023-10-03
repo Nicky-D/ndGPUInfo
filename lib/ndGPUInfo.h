@@ -14,6 +14,9 @@
 **/
 
 #pragma once
+
+#include <cstdint>
+
 namespace ndgpuinfo
 {
     struct gpu_info;
